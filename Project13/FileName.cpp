@@ -1,6 +1,6 @@
 //var4
 //Вариант 4.
-//a) Разработайте абстрактный тип данных  одномерный массив.
+//a) Разработайте абстрактный тип данных − одномерный массив.
 //Дополнительно перегрузить следующие операции :
 //int() - размер массива;
 //[] - доступ по индексу.
@@ -11,19 +11,19 @@
 //c) Создайте шаблонный класс одномерного массива электронных
 //устройств.Продемонстрируйте работу класса и все его операции.
 
+
 #include <iostream>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 using namespace std;
-
 
 class Massiv {
 private:
     int* data;
     int size;
-
 public:
-    Massiv(int n = 0) {
-        size = n;
+    Massiv(int n = 0) : size(n) {
         if (n > 0)
             data = new int[n];
         else
@@ -33,178 +33,309 @@ public:
     ~Massiv() {
         delete[] data;
     }
+
     operator int() const {
         return size;
     }
+
     int& operator[](int index) {
+        if (index < 0 || index >= size)
+            throw out_of_range("Index out of range");
         return data[index];
     }
+
     void set(int index, int value) {
-        data[index] = value;
+        if (index >= 0 && index < size)
+            data[index] = value;
     }
 };
 
-//2
-
 class ElectrDevice {
 private:
-    char* name;
+    string name;
     static double allmem;
     static int devcount;
-    
 protected:
     double memory;
-
 public:
-    ElectrDevice(const char* n, double memory) : memory(memory) {
-        name = new char[strlen(n) + 1];
-        strcpy_s(name, strlen(n) + 1, n);
+    ElectrDevice(const string& n, double memory) : name(n), memory(memory) {
         allmem += memory;
         devcount++;
     }
+
     virtual ~ElectrDevice() {
-        delete[] name;
         devcount--;
         allmem -= memory;
     }
 
-    virtual void show() {
-        cout << "Name: " << name << ", memory: " << memory << " GB" << endl << endl;
-    }
-    virtual double getPeriodOfUsing() {
-        return 5.0;
-    }
-    static double getSredMem() {
-        if (devcount == 0)
-            return 0;
-        else
-            return allmem / devcount;
-    }
-    double getMem() const {
-        return memory;
-    }
-    const char* getName() const {
-        return name;
+    virtual void show() const {
+        cout << "Name: " << name << ", memory: " << memory << " GB";
     }
 
+    virtual double getPeriodOfUsing() const {
+        return 5.0;
+    }
+
+    static double getSredMem() {
+        if (devcount == 0) return 0;
+        return allmem / devcount;
+    }
+
+    double getMem() const { return memory; }
+    string getName() const { return name; }
+
+    bool operator==(const ElectrDevice& other) const {
+        return memory == other.memory && name == other.name;
+    }
+    ElectrDevice(const ElectrDevice& other) : name(other.name), memory(other.memory) {
+        allmem += memory;
+        devcount++;
+    }
 };
+
 class Laptop : public ElectrDevice {
 private:
     double screensize;
-
 public:
-    Laptop(const char* name, double mem, double screen)
+    Laptop(const string& name, double mem, double screen)
         : ElectrDevice(name, mem), screensize(screen) {
     }
 
-    void show() {
-        cout << "Laptop: " << getName() << ", Memory: " << memory << " GB, Screen: " << screensize << endl << endl;
+    void show() const override {
+        ElectrDevice::show();
+        cout << ", screen: " << screensize << "\"";
     }
 
-    double getPeriodOfUsing() {
+    double getPeriodOfUsing() const override {
         return 10.0;
     }
 };
+
 class Smartphone : public ElectrDevice {
 private:
     double battery;
-
 public:
-    Smartphone(const char* name, double mem, double batt)
+    Smartphone(const string& name, double mem, double batt)
         : ElectrDevice(name, mem), battery(batt) {
     }
 
-    void show() {
-        cout << "Smartphone: " << getName() << ", Memory: " << memory
-            << " GB, Battery: " << battery << " mAh" << endl << endl;
+    void show() const override {
+        ElectrDevice::show();
+        cout << ", battery: " << battery << " mAh";
     }
 
-    double getPeriodOfUsing() {
+    double getPeriodOfUsing() const override {
         return 4.0;
     }
 };
 
-template<typename T>
-class DeviceArray {
-private:
-    T** arr;
-    int size;
-public:
-    DeviceArray(int s) {
-        size = s;
-        arr = new T * [s];
-        for (int i = 0; i < s; i++) {
-            arr[i] = nullptr;
-        }
-    }
-    ~DeviceArray() {
-        for (int i = 0; i < size; i++) {
-            delete arr[i];
-        }
-        delete[] arr;
-    }
-    void set(int index, T* device) {
-        if (index >= 0 && index < size) {
-            delete arr[index];
-            arr[index] = device;
-        }
-    }
-    T* operator[](int index) {
-        if (index >= 0 && index < size) {
-            return arr[index];
-        }
-        return nullptr;
-    }
-    int getSize() {
-        return size;
-    }
-    void showAll() {
-        for (int i = 0; i < size; i++) {
-            if (arr[i] != nullptr) {
-                arr[i]->show();
-            }
-        }
-    }
-    void showAverageMemory() {
-        cout << "Average memory of all devices: " << ElectrDevice::getSredMem() << " GB" << endl << endl;
-    }
-};
 double ElectrDevice::allmem = 0;
 int ElectrDevice::devcount = 0;
 
-int main() {
-    Massiv arr(5);
+template<typename T>
+class DeviceArray {
+private:
+    T** elems;
+    int count;
+    int maxsize;
 
-    for (int i = 0; i < 5; i++) {
-        arr[i] = i * 10;
+    void printElem(int val) const {
+        cout << val;
     }
 
+    void printElem(double val) const {
+        cout << val;
+    }
+
+    void printElem(const char* str) const {
+        cout << str;
+    }
+
+    void printElem(const ElectrDevice& elem) const {
+        elem.show();
+    }
+
+public:
+    DeviceArray(int maxSz = 10) : maxsize(maxSz), count(0) {
+        elems = new T * [maxsize];
+        for (int i = 0; i < maxsize; i++)
+            elems[i] = nullptr;
+    }
+
+    DeviceArray(const DeviceArray& other) : maxsize(other.maxsize), count(other.count) {
+        elems = new T * [maxsize];
+        for (int i = 0; i < count; i++)
+            elems[i] = new T(*other.elems[i]);
+        for (int i = count; i < maxsize; i++)
+            elems[i] = nullptr;
+    }
+
+    ~DeviceArray() {
+        for (int i = 0; i < count; i++)
+            delete elems[i];
+        delete[] elems;
+    }
+
+    DeviceArray<T>& operator=(const DeviceArray<T>& op) {
+        if (this == &op)
+            return *this;
+        for (int i = 0; i < count; i++)
+            delete elems[i];
+        delete[] elems;
+        maxsize = op.maxsize;
+        count = op.count;
+        elems = new T * [maxsize];
+        for (int i = 0; i < count; i++)
+            elems[i] = new T(*op.elems[i]);
+        for (int i = count; i < maxsize; i++)
+            elems[i] = nullptr;
+        return *this;
+    }
+
+    void add(const T& elem) {
+        if (count >= maxsize) {
+            cout << "Full massive";
+            return;
+        }
+        for (int i = 0; i < count; i++)
+            if (*elems[i] == elem) return;
+        elems[count++] = new T(elem);
+    }
+
+    bool operator>(const T& elem) const {
+        for (int i = 0; i < count; i++)
+            if (*elems[i] == elem) return true;
+        return false;
+    }
+
+    DeviceArray<T> operator*(const DeviceArray<T>& other) const {
+        DeviceArray<T> res(maxsize);
+        for (int i = 0; i < count; i++)
+            if (other > *elems[i])
+                res.add(*elems[i]);
+        return res;
+    }
+
+    bool operator<(const DeviceArray<T>& other) const {
+        for (int i = 0; i < count; i++)
+            if (!(other > *elems[i])) return false;
+        return true;
+    }
+
+    T& operator[](int index) {
+        if (index >= 0 && index < count)
+            return *elems[index];
+        throw out_of_range("Index out of range");
+    }
+
+    operator int() const {
+        return count;
+    }
+
+    void show() const {
+        cout << "[ ";
+        for (int i = 0; i < count; i++) {
+            printElem(*elems[i]);
+            cout << " ";
+        }
+        cout << "]" << endl;
+    }
+
+    void showAverageMemory() const {
+        cout << "Average memory of all devices: " << ElectrDevice::getSredMem() << " GB" << endl;
+    }
+
+    int getCount() const { return count; }
+    int getMaxSize() const { return maxsize; }
+};
+
+int main() {
+    Massiv arr(5);
+    for (int i = 0; i < 5; i++)
+        arr[i] = i * 10;
+
     int size = arr;
-    cout << "Size: " << size << ", element 2: " << arr[2] << endl << endl;
+    cout << "Massiv size: " << size << ", element 2: " << arr[2] << endl;
+    arr.set(0, 100);
+    cout << "After set(0, 100): " << arr[0] << endl << endl;
 
     Laptop laptop("Dell", 512, 15.6);
     Smartphone phone("iPhone", 128, 3000);
 
+    cout << "Devices:" << endl;
     laptop.show();
+    cout << endl;
     phone.show();
+    cout << endl;
 
-    cout << "Time for using Dell: " << laptop.getPeriodOfUsing() << "years." << endl;
-    cout << "Time for using iPhone: " << phone.getPeriodOfUsing() << "years." << endl;
+    cout << "Laptop period: " << laptop.getPeriodOfUsing() << " years" << endl;
+    cout << "Phone period: " << phone.getPeriodOfUsing() << " years" << endl;
+    cout << "Average memory: " << ElectrDevice::getSredMem() << " GB" << endl << endl;
 
-    cout << "Sred memory: " << ElectrDevice::getSredMem() << endl << endl;
+    Laptop laptop2("Dell", 512, 15.6);
+    cout << "Laptop == laptop2: " << (laptop == laptop2 ? "true" : "false") << endl;
 
-    DeviceArray<ElectrDevice> devices(3);
+    Smartphone phone2("iPhone", 128, 3000);
+    cout << "Phone == phone2: " << (phone == phone2 ? "true" : "false") << endl;
+    cout << "Laptop == phone: " << (laptop == phone ? "true" : "false") << endl << endl;
 
-    devices.set(0, new Laptop("ASUS", 1024, 17.3));
-    devices.set(1, new Smartphone("Pixel", 256, 4000));
-    devices.set(2, new Laptop("HP", 512, 15.6));
+    cout << "Laptop memory (getMem): " << laptop.getMem() << " GB" << endl;
+    cout << "Phone name (getName): " << phone.getName() << endl << endl;
 
-    devices.showAll();
+    DeviceArray<int> intArray(5);
+    intArray.add(10);
+    intArray.add(20);
+    intArray.add(30);
+    cout << "Int array: ";
+    intArray.show();
+    int arrlen = intArray;
+    cout << "Array length iz operator int: " << arrlen << endl << endl;
+    cout << "Count: " << intArray.getCount() << endl;
+    cout << "Element 0: " << intArray[0] << endl << endl;
 
-    cout << "Dostup 1: ";
-    devices[1]->show();
+    DeviceArray<ElectrDevice> devices(5);
+    devices.add(Laptop("ASUS", 1024, 17.3));
+    devices.add(Smartphone("Pixel", 256, 4000));
+    devices.add(Laptop("HP", 512, 15.6));
 
-    cout << "Size of massiv: " << devices.getSize() << endl << endl;
+    cout << "Devices array: ";
+    devices.show();
+    devices.showAverageMemory();
+
+    cout << "Period of device[0]: " << devices[0].getPeriodOfUsing() << " years" << endl;
+    cout << "Period of device[1]: " << devices[1].getPeriodOfUsing() << " years" << endl << endl;
+
+    DeviceArray<ElectrDevice> devices2(3);
+    devices2 = devices;
+    cout << "Copied array: ";
+    devices2.show();
+    cout << endl;
+
+    DeviceArray<ElectrDevice> devices3(devices);
+    cout << "Copy construct array: ";
+    devices3.show();
+    cout << endl;
+
+    DeviceArray<int> arr1(5);
+    arr1.add(1);
+    arr1.add(2);
+    arr1.add(3);
+
+    DeviceArray<int> arr2(5);
+    arr2.add(2);
+    arr2.add(3);
+    arr2.add(4);
+
+    DeviceArray<int> intrsc = arr1 * arr2;
+    cout << "Peresechenie: ";
+    intrsc.show();
+
+    DeviceArray<int> arr3(5);
+    arr3.add(2);
+    arr3.add(3);
+
+    cout << "arr1 < arr2: " << (arr1 < arr2 ? "true" : "false") << endl;
+    cout << "arr3 < arr1: " << (arr3 < arr1 ? "true" : "false") << endl;
 
     return 0;
 }
